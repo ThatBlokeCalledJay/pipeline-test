@@ -124,28 +124,28 @@ stages:
         projects: 'src/PipelineExample.App3.Tests/*.Tests.csproj'
         testRunTitle: 'App3 Test Run'
 
-- stage: ReleaseDev
-  jobs:
-    - job: ReleaseApp1Dev
-      variables:
-        doDeploy: $[stageDependencies.Build.GetChanges.outputs['CheckModified.App1Updated']]
-      condition: and(succeeded(), eq(variables.doDeploy, 'True'))
-      steps:
-      - script: echo Deploy App 1 to Dev
-        displayName: 'Dev Deploy App1'
+# - stage: ReleaseDev
+#   jobs:
+#     - job: ReleaseApp1Dev
+#       variables:
+#         doDeploy: $[stageDependencies.Build.GetChanges.outputs['CheckModified.App1Updated']]
+#       condition: and(succeeded(), eq(variables.doDeploy, 'True'))
+#       steps:
+#       - script: echo Deploy App 1 to Dev
+#         displayName: 'Dev Deploy App1'
 
-    - job: ReleaseApp2Dev
-      variables:
-        doDeploy: $[stageDependencies.Build.GetChanges.outputs['CheckModified.App2Updated']]
-      condition: and(succeeded(), eq(variables.doDeploy, 'True'))
-      steps:
-      - script: echo Deploy App 2 to Dev
-        displayName: 'Dev Deploy App2'
+#     - job: ReleaseApp2Dev
+#       variables:
+#         doDeploy: $[stageDependencies.Build.GetChanges.outputs['CheckModified.App2Updated']]
+#       condition: and(succeeded(), eq(variables.doDeploy, 'True'))
+#       steps:
+#       - script: echo Deploy App 2 to Dev
+#         displayName: 'Dev Deploy App2'
 
-    - job: ReleaseApp3Dev
-      variables:
-        doDeploy: $[stageDependencies.Build.GetChanges.outputs['CheckModified.App3Updated']]
-      condition: and(succeeded(), eq(variables.doDeploy, 'True'))
-      steps:
-      - script: echo Deploy App 3 to Dev
-        displayName: 'Dev Deploy App3'
+#     - job: ReleaseApp3Dev
+#       variables:
+#         doDeploy: $[stageDependencies.Build.GetChanges.outputs['CheckModified.App3Updated']]
+#       condition: and(succeeded(), eq(variables.doDeploy, 'True'))
+#       steps:
+#       - script: echo Deploy App 3 to Dev
+#         displayName: 'Dev Deploy App3'
