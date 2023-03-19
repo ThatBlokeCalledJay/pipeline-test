@@ -15,10 +15,11 @@ pool:
 stages:
 - stage: Build
   jobs:  
-  - job: BuildApp1
+  - job: BuildApi1
+    displayName: 'Build Api 1'
     steps:
     - task: DotNetCoreCLI@2
-      displayName: 'Restore App1'
+      displayName: 'Restore'
       inputs:
         command: 'restore'
         projects: 'src/PipelineExample.App1'
@@ -26,16 +27,17 @@ stages:
         vstsFeed: '1a343071-4c92-42ed-8b42-1526a6b90483'
 
     - task: DotNetCoreCLI@2
-      displayName: 'Run App1 Tests'
+      displayName: 'Run Tests'
       inputs:
         command: 'test'
         projects: 'src/PipelineExample.App1.Tests/*.Tests.csproj'
-        testRunTitle: 'App1 Test Run'
+        testRunTitle: 'Api 1 Test Run'
 
   - job: BuildApp2
+    displayName: 'Build Api 2'
     steps:
     - task: DotNetCoreCLI@2
-      displayName: 'Restore App2'
+      displayName: 'Restore'
       inputs:
         command: 'restore'
         projects: 'src/PipelineExample.App2'
@@ -43,22 +45,24 @@ stages:
         vstsFeed: '1a343071-4c92-42ed-8b42-1526a6b90483'
 
     - task: DotNetCoreCLI@2
-      displayName: 'Run App2 Tests'
+      displayName: 'Run Tests'
       inputs:
         command: 'test'
         projects: 'src/PipelineExample.App2.Tests/*.Tests.csproj'
-        testRunTitle: 'App2 Test Run'
+        testRunTitle: 'Api 2 Test Run'
 
  
 
-- stage: ReleaseDev
+- stage: DevDeploy
   jobs:
-    - job: ReleaseApp1Dev
+    - job: DevDeployApi1
+      displayName: 'Dev Deploy Api 1'
       steps:
-      - script: echo Deploy App 1 to Dev
-        displayName: 'Dev Deploy App1'
+      - script: echo Deploy Api 1 to Dev
+        displayName: 'Dev Deploy Api 1'
 
-    - job: ReleaseApp2Dev
+    - job: DevDeployApi2
+      displayName: 'Dev Deploy Api 2'
       steps:
-      - script: echo Deploy App 2 to Dev
-        displayName: 'Dev Deploy App2'
+      - script: echo Deploy Api 2 to Dev
+        displayName: 'Dev Deploy Api 2'
