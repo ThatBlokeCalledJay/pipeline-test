@@ -9,11 +9,141 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+stages:
+- stage: Build
+  jobs:
+  - job: GetChanges
+    displayName: "Get Changes"
+    steps:
+    - checkout: self
+      fetchDepth: 0
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        script: |
+
+          #Get any changed files
+          $changedFiles = git diff --name-status HEAD HEAD^
+          # Return $true if Files/ path is in the list of changed files, otherwise $false
+          $app1 = ((Select-String -InputObject $changedFiles -Pattern "src/PipelineExample.App1" -AllMatches).Matches.Count -gt 0)
+          # Return $true if Services/ path is in the list of changed files, otherwise $false
+          $app2 = ((Select-String -InputObject $changedFiles -Pattern "src/PipelineExample.App2" -AllMatches).Matches.Count -gt 0)
+
+          # Return $true if Services/ path is in the list of changed files, otherwise $false
+          $app3 = ((Select-String -InputObject $changedFiles -Pattern "src/PipelineExample.App3" -AllMatches).Matches.Count -gt 0)
+
+          $yamlFile = ((Select-String -InputObject $changedFiles -Pattern "azure-pipelines.yml" -AllMatches).Matches.Count -gt 0)
+
+          Write-Output $changedFiles
+
+          Write-Output "App1 Updated: $app1"
+          Write-Output "App2 Updated: $app2"
+          Write-Output "App3 Updated: $app3"
+          Write-Output "Yaml Updated: $yamlFile"
+
+          Write-Host "##vso[task.setvariable variable=App1Updated;isOutput=true]$app1"
+          Write-Host "##vso[task.setvariable variable=App2Updated;isOutput=true]$app2"
+          Write-Host "##vso[task.setvariable variable=App3Updated;isOutput=true]$app3"
+          Write-Host "##vso[task.setvariable variable=YamlUpdated;isOutput=true]$yamlFile"
+      name: CheckModified
+      displayName: "Identify Updated Projects"
+  
+  - job: YamlUpdated
+    dependsOn: GetChanges
+    variables:
+      hasChanged: $[dependencies.GetChanges.outputs['CheckModified.YamlUpdated']]
+    condition: eq(variables.hasChanged, 'True')
+    steps:
+    - script: |
+        echo "The yaml file was updated"
+      displayName: 'Yaml Changed'
+
+  - job: BuildApp1
+    dependsOn: GetChanges
+    variables:
+      hasChanged: $[dependencies.GetChanges.outputs['CheckModified.App1Updated']]
+    condition: eq(variables.hasChanged, 'True')
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore App1'
+      inputs:
+        command: 'restore'
+        projects: 'src/PipelineExample.App1'
+        feedsToUse: 'select'
+        vstsFeed: '1a343071-4c92-42ed-8b42-1526a6b90483'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run App1 Tests'
+      inputs:
+        command: 'test'
+        projects: 'src/PipelineExample.App1.Tests/*.Tests.csproj'
+        testRunTitle: 'App1 Test Run'
+
+  - job: BuildApp2
+    dependsOn: GetChanges
+    variables:
+      hasChanged: $[dependencies.GetChanges.outputs['CheckModified.App2Updated']]
+    condition: eq(variables.hasChanged, 'True')
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore App2'
+      inputs:
+        command: 'restore'
+        projects: 'src/PipelineExample.App2'
+        feedsToUse: 'select'
+        vstsFeed: '1a343071-4c92-42ed-8b42-1526a6b90483'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run App2 Tests'
+      inputs:
+        command: 'test'
+        projects: 'src/PipelineExample.App2.Tests/*.Tests.csproj'
+        testRunTitle: 'App2 Test Run'
+
+  - job: BuildApp3
+    dependsOn: GetChanges
+    variables:
+      hasChanged: $[dependencies.GetChanges.outputs['CheckModified.App3Updated']]
+    condition: eq(variables.hasChanged, 'True')
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore App3'
+      inputs:
+        command: 'restore'
+        projects: 'src/PipelineExample.App3'
+        feedsToUse: 'select'
+        vstsFeed: '1a343071-4c92-42ed-8b42-1526a6b90483'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run App3 Tests'
+      inputs:
+        command: 'test'
+        projects: 'src/PipelineExample.App3.Tests/*.Tests.csproj'
+        testRunTitle: 'App3 Test Run'
+
+- stage: ReleaseDev
+  jobs:
+    - job: ReleaseApp1Dev
+      variables:
+        doDeploy: $[stageDependencies.Build.GetChanges.outputs['CheckModified.App1Updated']]
+      condition: and(succeeded(), eq(variables.doDeploy, 'True'))
+      steps:
+      - script: echo Deploy App 1 to Dev
+        displayName: 'Dev Deploy App1'
+
+    - job: ReleaseApp2Dev
+      variables:
+        doDeploy: $[stageDependencies.Build.GetChanges.outputs['CheckModified.App2Updated']]
+      condition: and(succeeded(), eq(variables.doDeploy, 'True'))
+      steps:
+      - script: echo Deploy App 2 to Dev
+        displayName: 'Dev Deploy App2'
+
+    - job: ReleaseApp3Dev
+      variables:
+        doDeploy: $[stageDependencies.Build.GetChanges.outputs['CheckModified.App3Updated']]
+      condition: and(succeeded(), eq(variables.doDeploy, 'True'))
+      steps:
+      - script: echo Deploy App 3 to Dev
+        displayName: 'Dev Deploy App3'
