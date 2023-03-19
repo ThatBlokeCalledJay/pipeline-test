@@ -1,65 +1,19 @@
-trigger: none # will disable CI builds (but not PR builds)
-
-pr:
+trigger:
   branches:
-    include:
+    include: 
     - main
   paths:
-    exclude:
-    - README.md
+    include:
+    - src/PipelineExample.App1*
+    - src/PipelineExample.App2*
 
 pool:
   vmImage: ubuntu-latest
 
 stages:
 - stage: Build
-  jobs:
-  - job: GetModified
-    displayName: "Identify Modified Projects"
-    steps:
-    - checkout: self
-      fetchDepth: 0
-
-    - task: PowerShell@2
-      inputs:
-        targetType: 'inline'
-        script: |
-          $changedFiles = git diff --name-status HEAD HEAD^
-          
-          Write-Output $changedFiles
-
-          $app1 = ((Select-String -InputObject $changedFiles -Pattern "src/PipelineExample.App1" -AllMatches).Matches.Count -gt 0)
-          $app2 = ((Select-String -InputObject $changedFiles -Pattern "src/PipelineExample.App2" -AllMatches).Matches.Count -gt 0)
-          $app3 = ((Select-String -InputObject $changedFiles -Pattern "src/PipelineExample.App3" -AllMatches).Matches.Count -gt 0)
-
-          $yamlFile = ((Select-String -InputObject $changedFiles -Pattern "azure-pipelines.yml" -AllMatches).Matches.Count -gt 0)
-          Write-Output "App1 Updated: $app1"
-          Write-Output "App2 Updated: $app2"
-          Write-Output "App3 Updated: $app3"
-          Write-Output "Yaml Updated: $yamlFile"
-
-          Write-Host "##vso[task.setvariable variable=App1Updated;isOutput=true]$app1"
-          Write-Host "##vso[task.setvariable variable=App2Updated;isOutput=true]$app2"
-          Write-Host "##vso[task.setvariable variable=App3Updated;isOutput=true]$app3"
-          Write-Host "##vso[task.setvariable variable=YamlUpdated;isOutput=true]$yamlFile"
-      name: CheckModified
-      displayName: "Identify Modified Projects"
-  
-  - job: YamlUpdated
-    dependsOn: GetModified
-    variables:
-      hasChanged: $[dependencies.GetModified.outputs['CheckModified.YamlUpdated']]
-    condition: eq(variables.hasChanged, 'True')
-    steps:
-    - script: |
-        echo "The yaml file was updated"
-      displayName: 'Yaml Changed'
-
+  jobs:  
   - job: BuildApp1
-    dependsOn: GetModified
-    variables:
-      hasChanged: $[dependencies.GetModified.outputs['CheckModified.App1Updated']]
-    condition: eq(variables.hasChanged, 'True')
     steps:
     - task: DotNetCoreCLI@2
       displayName: 'Restore App1'
@@ -77,10 +31,6 @@ stages:
         testRunTitle: 'App1 Test Run'
 
   - job: BuildApp2
-    dependsOn: GetModified
-    variables:
-      hasChanged: $[dependencies.GetModified.outputs['CheckModified.App2Updated']]
-    condition: eq(variables.hasChanged, 'True')
     steps:
     - task: DotNetCoreCLI@2
       displayName: 'Restore App2'
@@ -97,49 +47,22 @@ stages:
         projects: 'src/PipelineExample.App2.Tests/*.Tests.csproj'
         testRunTitle: 'App2 Test Run'
 
-  - job: BuildApp3
-    dependsOn: GetModified
-    variables:
-      hasChanged: $[dependencies.GetModified.outputs['CheckModified.App3Updated']]
-    condition: eq(variables.hasChanged, 'True')
-    steps:
-    - task: DotNetCoreCLI@2
-      displayName: 'Restore App3'
-      inputs:
-        command: 'restore'
-        projects: 'src/PipelineExample.App3'
-        feedsToUse: 'select'
-        vstsFeed: '1a343071-4c92-42ed-8b42-1526a6b90483'
+ 
 
-    - task: DotNetCoreCLI@2
-      displayName: 'Run App3 Tests'
-      inputs:
-        command: 'test'
-        projects: 'src/PipelineExample.App3.Tests/*.Tests.csproj'
-        testRunTitle: 'App3 Test Run'
+- stage: ReleaseDev
+  jobs:
+    - job: ReleaseApp1Dev
+      variables:
+        doDeploy: $[stageDependencies.Build.GetModified.outputs['CheckModified.App1Updated']]
+      condition: and(succeeded(), eq(variables.doDeploy, 'True'))
+      steps:
+      - script: echo Deploy App 1 to Dev
+        displayName: 'Dev Deploy App1'
 
-# - stage: ReleaseDev
-#   jobs:
-#     - job: ReleaseApp1Dev
-#       variables:
-#         doDeploy: $[stageDependencies.Build.GetModified.outputs['CheckModified.App1Updated']]
-#       condition: and(succeeded(), eq(variables.doDeploy, 'True'))
-#       steps:
-#       - script: echo Deploy App 1 to Dev
-#         displayName: 'Dev Deploy App1'
-
-#     - job: ReleaseApp2Dev
-#       variables:
-#         doDeploy: $[stageDependencies.Build.GetModified.outputs['CheckModified.App2Updated']]
-#       condition: and(succeeded(), eq(variables.doDeploy, 'True'))
-#       steps:
-#       - script: echo Deploy App 2 to Dev
-#         displayName: 'Dev Deploy App2'
-
-#     - job: ReleaseApp3Dev
-#       variables:
-#         doDeploy: $[stageDependencies.Build.GetModified.outputs['CheckModified.App3Updated']]
-#       condition: and(succeeded(), eq(variables.doDeploy, 'True'))
-#       steps:
-#       - script: echo Deploy App 3 to Dev
-#         displayName: 'Dev Deploy App3'
+    - job: ReleaseApp2Dev
+      variables:
+        doDeploy: $[stageDependencies.Build.GetModified.outputs['CheckModified.App2Updated']]
+      condition: and(succeeded(), eq(variables.doDeploy, 'True'))
+      steps:
+      - script: echo Deploy App 2 to Dev
+        displayName: 'Dev Deploy App2'
