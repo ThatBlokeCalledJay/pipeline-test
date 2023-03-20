@@ -1,0 +1,10 @@
+parameters:
+  - name: solutionFile
+    type: string
+
+
+jobs:
+- job:
+  steps:
+  - script: echo '${{ parameters.solutionFile }} The yaml file was updated'
+      
