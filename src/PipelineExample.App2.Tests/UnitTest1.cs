@@ -28,9 +28,4 @@ public class UnitTest1
         Assert.IsTrue(true);
     }
 
-    [TestMethod]
-    public void TestMethod5()
-    {
-        Assert.IsTrue(true);
-    }
 }

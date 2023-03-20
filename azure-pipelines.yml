@@ -1,64 +1,34 @@
 trigger:
-  branches:
-    include: 
-    - main
-  paths:
-    include:
-    - src/PipelineExample.App1*
-    - src/PipelineExample.App2*
+    branches:
+        include:
+        - main
 
-pr: none # will disable PR builds (but not CI builds)
+variables:
+  isMainBranch: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: "ubuntu-latest"
 
 stages:
 - stage: Build
-  jobs:  
-  - job: BuildApp1
-    steps:
-    - task: DotNetCoreCLI@2
-      displayName: 'Restore App1'
-      inputs:
-        command: 'restore'
-        projects: 'src/PipelineExample.App1'
-        feedsToUse: 'select'
-        vstsFeed: '1a343071-4c92-42ed-8b42-1526a6b90483'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Run App1 Tests'
-      inputs:
-        command: 'test'
-        projects: 'src/PipelineExample.App1.Tests/*.Tests.csproj'
-        testRunTitle: 'App1 Test Run'
-
-  - job: BuildApp2
-    steps:
-    - task: DotNetCoreCLI@2
-      displayName: 'Restore App2'
-      inputs:
-        command: 'restore'
-        projects: 'src/PipelineExample.App2'
-        feedsToUse: 'select'
-        vstsFeed: '1a343071-4c92-42ed-8b42-1526a6b90483'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Run App2 Tests'
-      inputs:
-        command: 'test'
-        projects: 'src/PipelineExample.App2.Tests/*.Tests.csproj'
-        testRunTitle: 'App2 Test Run'
-
- 
-
-- stage: ReleaseDev
+  variables:
+    GIT_BRANCH: $(Build.SourceBranch)
+    GIT_COMMIT: $(Build.SourceVersion)
+    solutionDirectory: "src"
+    solutionFile: "$(solutionDirectory)/DealStacker.Api.sln"
+    appDirectory: "$(solutionDirectory)/DealStacker.Api.Application"
+    identityServerDirectory: "$(solutionDirectory)/Dealstacker.IdentityServer"
+    pcpSyncherDirectory: "$(solutionDirectory)/DealStacker.PcpCacheSyncher"
+    branchContactImportDirectory: "$(solutionDirectory)/DealStacker.BranchContactImport"
   jobs:
-    - job: ReleaseApp1Dev
-      steps:
-      - script: echo Deploy App 1 to Dev
-        displayName: 'Dev Deploy App1'
+  - template: pipeline/build/build.yml
+    parameters:
+      solutionFile: "$(solutionDirectory)/DealStacker.Api1.sln"
 
-    - job: ReleaseApp2Dev
-      steps:
-      - script: echo Deploy App 2 to Dev
-        displayName: 'Dev Deploy App2'
+  - template: pipeline/build/build.yml
+    parameters:
+      solutionFile: "$(solutionDirectory)/DealStacker.Api2.sln"
+
+  - template: pipeline/build/build.yml
+    parameters:
+      solutionFile: "$(solutionDirectory)/DealStacker.Api3.sln"
