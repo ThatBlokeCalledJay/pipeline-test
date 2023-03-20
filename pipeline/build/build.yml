@@ -6,7 +6,7 @@ parameters:
 
 jobs:
 - job:
-  displayName: ${{ parameters.solutionFile }}
+  displayName: ${{ parameters.name }}
   steps:
   - script: echo '${{ parameters.solutionFile }} The yaml file was updated'
       
