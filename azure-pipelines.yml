@@ -22,13 +22,16 @@ stages:
     branchContactImportDirectory: "$(solutionDirectory)/DealStacker.BranchContactImport"
   jobs:
   - template: pipeline/build/build.yml
+    displayName: 'Build App 1'
     parameters:
       solutionFile: "$(solutionDirectory)/DealStacker.Api1.sln"
 
   - template: pipeline/build/build.yml
+    displayName: 'Build App 2'
     parameters:
       solutionFile: "$(solutionDirectory)/DealStacker.Api2.sln"
 
   - template: pipeline/build/build.yml
+    displayName: 'Build App 3'
     parameters:
       solutionFile: "$(solutionDirectory)/DealStacker.Api3.sln"
